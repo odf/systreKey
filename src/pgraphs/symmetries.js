@@ -157,23 +157,6 @@ const automorphism = (graph, start1, start2, transform, edgeByVec) => {
 };
 
 
-export const isMinimal = graph => {
-  const id = ops.identityMatrix(graph.dim);
-  const verts = pg.vertices(graph);
-  const start = verts[0];
-  const pos = pg.barycentricPlacement(graph);
-  const adj = pg.adjacencies(graph);
-  const ebv = edgesByVector(graph, pos, adj);
-
-  for (const v of verts.slice(1)) {
-    if (automorphism(graph, start, v, id, ebv) != null)
-      return false;
-  }
-
-  return true;
-}
-
-
 const translationalEquivalences = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
@@ -245,35 +228,35 @@ const fullTranslationBasis = vectors => {
 
 
 export const minimalImage = graph => {
-  if (isMinimal(graph))
+  const pos = pg.barycentricPlacement(graph);
+  const equivs = translationalEquivalences(graph);
+  const classes = translationalEquivalenceClasses(graph, equivs);
+  const vectors = extraTranslationVectors(graph, equivs);
+
+  if (vectors.length == 0)
     return graph;
-  else {
-    const pos = pg.barycentricPlacement(graph);
-    const equivs = translationalEquivalences(graph);
-    const classes = translationalEquivalenceClasses(graph, equivs);
-    const vectors = extraTranslationVectors(graph, equivs);
-    const basisChange = ops.inverse(fullTranslationBasis(vectors));
 
-    const old2new = {};
-    for (let i = 0; i < classes.length; ++i) {
-      for (const v of classes[i])
-        old2new[v] = i;
-    }
+  const basisChange = ops.inverse(fullTranslationBasis(vectors));
 
-    const imgEdges = [];
-    for (const { head: v, tail: w, shift: s } of graph.edges) {
-      const vNew = old2new[v];
-      const wNew = old2new[w];
-      const vShift = ops.minus(pos[v], pos[classes[vNew][0]]);
-      const wShift = ops.minus(pos[w], pos[classes[wNew][0]]);
-      const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)),
-                             basisChange);
-
-      imgEdges.push([vNew + 1, wNew + 1, sNew]);
-    }
-
-    return pg.make(imgEdges);
+  const old2new = {};
+  for (let i = 0; i < classes.length; ++i) {
+    for (const v of classes[i])
+      old2new[v] = i;
   }
+
+  const imgEdges = [];
+  for (const { head: v, tail: w, shift: s } of graph.edges) {
+    const vNew = old2new[v];
+    const wNew = old2new[w];
+    const vShift = ops.minus(pos[v], pos[classes[vNew][0]]);
+    const wShift = ops.minus(pos[w], pos[classes[wNew][0]]);
+    const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)),
+                           basisChange);
+
+    imgEdges.push([vNew + 1, wNew + 1, sNew]);
+  }
+
+  return pg.make(imgEdges);
 };
 
 
