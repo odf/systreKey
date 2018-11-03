@@ -129,34 +129,6 @@ export const adjacencies = graph => {
 };
 
 
-export const coordinationSeq = (graph, start, dist) => {
-  const adj  = adjacencies(graph);
-  const zero = ops.vector(graph.dim);
-
-  let oldShell = {};
-  let thisShell = { [JSON.stringify([start, zero])]: true };
-  const res = [1];
-
-  for (let i = 0; i < dist; ++i) {
-    const nextShell = {};
-    for (const item of Object.keys(thisShell)) {
-      const [v, s] = JSON.parse(item);
-      for (const { v: w, s: t } of adj[v]) {
-        const key = JSON.stringify([w, ops.plus(s, t)]);
-        if (!oldShell[key] && !thisShell[key])
-          nextShell[key] = true;
-      }
-    }
-
-    res.push(Object.keys(nextShell).length);
-    oldShell = thisShell;
-    thisShell = nextShell;
-  }
-
-  return res;
-};
-
-
 const _componentInOrbitGraph = (graph, start) => {
   const adj = adjacencies(graph);
   const bridges = [];
@@ -239,24 +211,6 @@ export const isConnected = graph => {
 };
 
 
-export const connectedComponents = graph => {
-  const verts = vertices(graph);
-  const seen = {};
-  const result = [];
-
-  for (const start of verts) {
-    if (!seen[start]) {
-      const comp = _componentInCoverGraph(graph, start);
-      result.push(comp);
-      for (const v of comp.nodes)
-        seen[v] = true;
-    }
-  }
-
-  return result;
-};
-
-
 export const barycentricPlacement = graph => {
   if (graph._$pos != undefined)
     return graph._$pos;
@@ -299,23 +253,6 @@ export const barycentricPlacement = graph => {
 };
 
 
-export const isStable = graph => {
-  const pos = barycentricPlacement(graph);
-  const verts = vertices(graph);
-  const seen = {};
-
-  for (const v of verts) {
-    const key = encode(pos[v].map(x => ops.mod(x, 1)));
-    if (seen[key])
-      return false;
-    else
-      seen[key] = true;
-  }
-
-  return true;
-};
-
-
 export const isLocallyStable = graph => {
   const pos = barycentricPlacement(graph);
 
@@ -338,115 +275,9 @@ export const isLocallyStable = graph => {
 };
 
 
-export const hasSecondOrderCollisions = graph => {
-  const pos = barycentricPlacement(graph);
-  const adj = adjacencies(graph);
-  const verts = vertices(graph);
-  const seen = {};
-
-  for (const v of verts) {
-    const vectors = allIncidences(graph, v, adj)
-          .map(e => edgeVector(e, pos))
-          .sort((v, w) => ops.cmp(v, w));
-
-    const key = encode([].concat([pos[v].map(x => ops.mod(x, 1))], vectors));
-    if (seen[key])
-      return true;
-    else
-      seen[key] = true;
-  }
-
-  return false;
-};
-
-
 export const allIncidences = (graph, v, adj=adjacencies(graph)) =>
   adj[v].map(({v: w, s}) => makeEdge(v, w, s));
 
 
 export const edgeVector = (e, pos) =>
   ops.plus(e.shift, ops.minus(pos[e.tail], pos[e.head]));
-
-
-export const graphWithNormalizedShifts = graph => {
-  const v0 = graph.edges[0].head;
-  const adj = adjacencies(graph);
-  const shifts = { [v0]: ops.vector(graph.dim) };
-  const queue = [v0];
-
-  while (queue.length) {
-    const v = queue.shift();
-
-    for (const { v: w, s } of adj[v]) {
-      if (shifts[w] == null) {
-        shifts[w] = ops.plus(s, shifts[v]);
-        queue.push(w)
-      }
-    }
-  }
-
-  return make(graph.edges.map(e => {
-    const h = e.head;
-    const t = e.tail;
-    const s = e.shift;
-
-    return [h, t, ops.minus(shifts[t], ops.plus(shifts[h], s))];
-  }));
-};
-
-
-export const finiteCover = (graph, cell) => {
-  if (!cell.every(v => v.every(x => ops.isInteger(x))))
-    throw new Error('cell vectors must be integral');
-  else if (ops.eq(0, ops.determinant(cell)))
-    throw new Error('cell vectors must form a basis');
-
-  const lattice = ops.times(ops.identityMatrix(graph.dim), ops.inverse(cell));
-
-  const origin = ops.vector(graph.dim);
-  const latticePoints = [origin];
-  const seen = { [encode(origin)]: true };
-
-  for (let i = 0; i < latticePoints.length; ++i) {
-    const v = latticePoints[i];
-    for (const w of lattice) {
-      const s = ops.mod(ops.plus(v, w), 1);
-      if (!seen[encode(s)]) {
-        latticePoints.push(s);
-        seen[encode(s)] = true;
-      }
-    }
-  }
-
-  const verts = vertices(graph);
-  const pos = barycentricPlacement(graph);
-
-  let nextNode = 1;
-  const coverToNode = {};
-
-  for (const v of verts) {
-    const p = ops.times(pos[v], lattice);
-    for (const s of latticePoints) {
-      coverToNode[encode([v, ops.mod(ops.plus(p, s), 1)])] = nextNode;
-      ++nextNode;
-    }
-  }
-
-  const coverEdges = [];
-  for (const e of graph.edges) {
-    const head = ops.times(pos[e.head], lattice);
-    const tail = ops.times(ops.plus(pos[e.tail], e.shift), lattice);
-    const vec = ops.minus(tail, head);
-    for (const s of latticePoints) {
-      const p = ops.mod(ops.plus(head, s), 1);
-      const q = ops.plus(p, vec);
-      const r = ops.mod(q, 1);
-      const t = ops.minus(q, r);
-      const v = coverToNode[encode([e.head, p])];
-      const w = coverToNode[encode([e.tail, r])];
-      coverEdges.push([v, w, t]);
-    }
-  }
-
-  return make(coverEdges);
-};
