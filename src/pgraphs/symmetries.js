@@ -367,7 +367,7 @@ export const symmetries = graph => {
   const I = ops.identityMatrix(graph.dim);
   const gens = [automorphism(graph, v0, v0, I, ebv)];
 
-  const p = new part.LabelledPartition((a, b) => a || b);
+  const p = new part.Partition((a, b) => a || b);
 
   for (let i = 0; i < edgeLists.length; ++i) {
     if (p.find(keys[i]) != p.find(keys[0]) && !p.getLabel(keys[i])) {
