@@ -1,20 +1,13 @@
 const base = require('./base');
 const mats = require('./matrices');
 const linalg = require('./linearAlgebra');
-const residues = require('./residues');
 
 
 export const integers = require('./integers')
   .extend(base.arithmetic());
 
-export const floats = require('./floats')
-  .extend(base.arithmetic());
-
 export const rationals = require('./fractions')
   .extend(integers, ['Integer', 'LongInt'], 'Fraction');
-
-export const floatMatrices = mats
-  .extend(floats, ['Integer', 'Float']);
 
 export const rationalMatrices = mats
   .extend(rationals, ['Integer', 'LongInt', 'Fraction']);
@@ -24,11 +17,6 @@ export const rationalLinearAlgebra = linalg
 
 export const rationalLinearAlgebraModular = linalg
   .extend(rationalMatrices, false);
-
-export const numericalLinearAlgebra = linalg
-  .extend(floatMatrices, true, Math.pow(2, -50));
-
-export const residueClassRing = m => residues.extend(base.arithmetic(), m);
 
 
 if (require.main == module) {
@@ -118,32 +106,6 @@ if (require.main == module) {
   testNullSpace([[0,2,0]]);
   testNullSpace([[0,0,0,0], [0,0,0,0], [0,0,-1,0], [0,0,0,0]]);
 
-
-  const fops = numericalLinearAlgebra;
-
-  console.log();
-  console.log(fops.sqrt(625));
-  console.log(fops.sqrt(626));
-  const B = fops.inverse(A);
-  console.log(`${A} *`);
-  console.log(`${B} =`);
-  console.log(`${fops.times(A, B)}`);
-
-  console.log();
-
-  const testFloatInverse = A => {
-    const B = fops.inverse(A);
-    console.log(`${A} *\n${B} =\n${B ? fops.times(A, B) : B}\n`);
-  };
-
-  testFloatInverse([[0.8164965809277261,0,0],
-                    [0.577350269189626,0.8660254037844387,0],
-                    [-5.5511151231257815e-17,-0.5,0.9999999999999998]]);
-
-  testFloatInverse([[0.8164965809277261,0,0],
-                    [0.577350269189626,0.8660254037844387,0],
-                    [0,-0.5,0.9999999999999998]]);
-
   console.log(ops.cmp([1, 2, 3], [1, 2, 2]));
   console.log(ops.cmp([1, 2, 3], [1, 2, 3]));
   console.log(ops.cmp([1, 2, 3], [1, 2, 4]));
@@ -154,26 +116,4 @@ if (require.main == module) {
   console.log(ops.sgn([0, 2, 3]));
   console.log(ops.sgn([0, -2, 3]));
   console.log(ops.sgn([0, 0, 0]));
-
-  const inverseTest = (a, m) => {
-    const ops = residueClassRing(m);
-    const ainv = ops.div(1, a);
-    console.log(`1 / ${a} = ${ainv} (mod ${m})`);
-
-    if (ainv >= m)
-      console.log(`ERROR: ${ainv} is too large`);
-    else {
-      const t = ops.times(a, ainv);
-      if (ops.ne(t, 1)) {
-        console.log(`ERROR: ${a} * ${ainv} = ${t} (mod ${m})`);
-      }
-    }
-  }
-
-  for (const p of [3, 5, 7, 11, 13]) {
-    console.log();
-    for (let a = 2; a < p; ++a) {
-      inverseTest(a, p);
-    }
-  }
 }
