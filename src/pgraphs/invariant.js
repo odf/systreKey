@@ -147,10 +147,10 @@ export const invariant = graph => {
     else {
       let [t, b] = [trav, best];
 
-      while (!t.isNil && _cmpSteps(t.first(), b.first()) == 0)
+      while (t != null && _cmpSteps(t.first(), b.first()) == 0)
         [t, b] = [t.rest(), b.rest()];
 
-      if (!t.isNil && _cmpSteps(t.first(), b.first()) < 0)
+      if (t != null && _cmpSteps(t.first(), b.first()) < 0)
         best = trav;
     }
   }
