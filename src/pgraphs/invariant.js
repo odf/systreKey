@@ -1,5 +1,3 @@
-import * as S from '../common/lazyseq';
-
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
@@ -98,6 +96,38 @@ const _postprocessTraversal = trav => {
 };
 
 
+const _lazySeq = generator => {
+  const s = generator.next();
+
+  if (s.done)
+    return null;
+  else {
+    const obj = {
+      first: () => s.value,
+      rest: () => {
+        const val = (() => _lazySeq(generator))();
+        obj.rest = () => val;
+        return val;
+      }
+    };
+
+    return obj;
+  }
+};
+
+
+const _seqToArray = s => {
+  const a = [];
+
+  while (s != null) {
+    a.push(s.first());
+    s = s.rest();
+  }
+
+  return a;
+};
+
+
 export const invariant = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
@@ -110,7 +140,7 @@ export const invariant = graph => {
 
   for (const edgeList of sym.representativeEdgeLists) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
-    const trav = S.seq(_traversal(graph, edgeList[0].head, transform, adj));
+    const trav = _lazySeq(_traversal(graph, edgeList[0].head, transform, adj));
 
     if (best == null)
       best = trav;
@@ -125,7 +155,7 @@ export const invariant = graph => {
     }
   }
 
-  return _postprocessTraversal(best.toArray()).sort(_cmpSteps);
+  return _postprocessTraversal(_seqToArray(best)).sort(_cmpSteps);
 };
 
 
