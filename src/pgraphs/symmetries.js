@@ -157,46 +157,6 @@ const automorphism = (graph, start1, start2, transform, edgeByVec) => {
 };
 
 
-const productAutomorphism = (phi, psi) => {
-  const compose = (f, g) => {
-    const h = {};
-    for (const x of Object.keys(f)) {
-      h[x] = g[f[x]];
-      if (h[x] == null)
-        throw new Error('automorphisms do not compose');
-    }
-    return h;
-  };
-
-  const src2img = compose(phi.src2img, psi.src2img);
-  const transform = ops.times(phi.transform, psi.transform);
-
-  return { src2img, transform };
-};
-
-
-const groupOfAutomorphisms = (generators, keyFn) => {
-  const result = generators.slice();
-  const seen = {};
-  generators.forEach(gen => seen[keyFn(gen)] = true);
-
-  for (let next = 0; next < result.length; ++next) {
-    const phi = result[next];
-    for (const psi of generators) {
-      const product = productAutomorphism(phi, psi);
-      const key = keyFn(product);
-
-      if (!seen[key]) {
-        result.push(product);
-        seen[key] = true;
-      }
-    }
-  }
-
-  return result;
-};
-
-
 export const isMinimal = graph => {
   const id = ops.identityMatrix(graph.dim);
   const verts = pg.vertices(graph);
@@ -284,9 +244,9 @@ const fullTranslationBasis = vectors => {
 };
 
 
-export const minimalImageWithOrbits = graph => {
+export const minimalImage = graph => {
   if (isMinimal(graph))
-    return { graph };
+    return graph;
   else {
     const pos = pg.barycentricPlacement(graph);
     const equivs = translationalEquivalences(graph);
@@ -312,15 +272,9 @@ export const minimalImageWithOrbits = graph => {
       imgEdges.push([vNew + 1, wNew + 1, sNew]);
     }
 
-    return {
-      graph: pg.make(imgEdges),
-      orbits: classes
-    };
+    return pg.make(imgEdges);
   }
 };
-
-
-export const minimalImage = graph => minimalImageWithOrbits(graph).graph;
 
 
 const isUnimodular = A =>
@@ -366,7 +320,7 @@ const goodEdgeLists = (graph, edgeLists) => {
 };
 
 
-export const symmetries = graph => {
+export const representativeEdgeLists = graph => {
   const pos = pg.barycentricPlacement(graph);
 
   if (!pg.isLocallyStable(graph))
@@ -386,7 +340,6 @@ export const symmetries = graph => {
   const invB0 = ops.inverse(bases[0].B);
 
   const I = ops.identityMatrix(graph.dim);
-  const gens = [automorphism(graph, v0, v0, I, ebv)];
 
   const p = new part.Partition((a, b) => a || b);
 
@@ -397,7 +350,6 @@ export const symmetries = graph => {
       const iso = isUnimodular(M) && automorphism(graph, v0, v, M, ebv);
 
       if (iso) {
-        gens.push(iso);
         for (let k = 0; k < edgeLists.length; ++k)
           p.union(keys[k], encode(mapped(edgeLists[k], iso)));
       }
@@ -406,9 +358,5 @@ export const symmetries = graph => {
     }
   }
 
-  return {
-    representativeEdgeLists: keys.filter(k => k == p.find(k)).map(decode),
-    symmetries: groupOfAutomorphisms(
-      gens, phi => encode(mapped(edgeLists[0], phi)))
-  };
+  return keys.filter(k => k == p.find(k)).map(decode);
 };

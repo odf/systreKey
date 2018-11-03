@@ -131,14 +131,14 @@ const _seqToArray = s => {
 export const invariant = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
-  const sym = ps.symmetries(graph);
+  const edgeListReps = ps.representativeEdgeLists(graph);
 
   const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
     (headA - headB) || (tailA - tailB) || ops.cmp(shiftA, shiftB);
 
   let best = null;
 
-  for (const edgeList of sym.representativeEdgeLists) {
+  for (const edgeList of edgeListReps) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
     const trav = _lazySeq(_traversal(graph, edgeList[0].head, transform, adj));
 
