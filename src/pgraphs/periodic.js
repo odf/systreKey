@@ -4,7 +4,6 @@ import { rationalLinearAlgebra,
          rationalLinearAlgebraModular } from '../arithmetic/types';
 
 import modularSolver from '../arithmetic/solveRational';
-import * as solveRational from '../arithmetic/solveRational';
 
 
 export const ops = rationalLinearAlgebra;
