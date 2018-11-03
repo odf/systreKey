@@ -166,32 +166,3 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 
   return intOps.register(methods);
 };
-
-
-if (require.main == module) {
-  const a = require('./integers').extend(require('./base').arithmetic());
-  const ops = extend(a, ['Integer', 'LongInt']);
-
-  const N = 128;
-  let t = 0, q = 1;
-
-  for (let i = 0; i < 128; ++i) {
-    q = ops.div(q, 2);
-    t = ops.plus(t, q);
-  }
-  console.log(`${t}`);
-  console.log(`${ops.plus(t, q)}`);
-
-  console.log();
-  console.log(`floor( 5/3) = ${ops.floor(ops.div( 5, 3))}`);
-  console.log(`floor(-5/3) = ${ops.floor(ops.div(-5, 3))}`);
-  console.log(`ceil ( 5/3) = ${ops.ceil (ops.div( 5, 3))}`);
-  console.log(`ceil (-5/3) = ${ops.ceil (ops.div(-5, 3))}`);
-  console.log(`round( 5/3) = ${ops.round(ops.div( 5, 3))}`);
-  console.log(`round(-5/3) = ${ops.round(ops.div(-5, 3))}`);
-
-  console.log(`${ops.rational('-12_345_678_901_234_567_890')}`);
-  console.log(`${ops.rational('-111_111_111_111_111_111/-12_345_679')}`);
-
-  console.log();
-}

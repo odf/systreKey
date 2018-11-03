@@ -108,25 +108,3 @@ export const arithmetic = (registry = mergeDeep({}, defaults)) => {
 
   return result;
 };
-
-
-if (require.main == module) {
-  const ops = arithmetic()
-    .register({
-      add: {
-        Integer: {
-          Integer: (a, b) => a + b,
-          String : (n, s) => `${n}+"${s}"`
-        },
-        __default__: (x, y) => `${x} plus ${y}`
-      },
-      test: {
-        __default__: (x, y, ops) => `<${ops.add(x, y)}>`
-      }
-    });
-
-  console.log(`add(3, 4) = ${ops.add(3, 4)}`);
-  console.log(`add(5, "Olaf") = ${ops.add(5, "Olaf")}`);
-  console.log(`add("Olaf", "Delgado") = ${ops.add("Olaf", "Delgado")}`);
-  console.log(`test(5, "Olaf") = ${ops.test(5, "Olaf")}`);
-}

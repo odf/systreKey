@@ -690,31 +690,3 @@ export const extend = (baseOps, baseLength = 0) => {
     }
   });
 };
-
-
-if (require.main == module) {
-  const ops = extend(require('./base').arithmetic());
-
-  const N = 59;
-  let t = 1;
-
-  for (let i = 1; i < N; ++i) {
-    t = ops.times(t, i);
-    console.log(`${t}`);
-  }
-
-  console.log(`${ops.idiv(ops.plus(t, 1), t)}`);
-  console.log(`${ops.idiv(ops.negative(ops.plus(t, 1)), t)}`);
-  console.log(`${ops.integer(t.toString())}`);
-  console.log(`${ops.idiv(ops.plus(t, 1), ops.negative(t))}`);
-  console.log(`${ops.idiv(ops.negative(ops.plus(t, 1)), ops.negative(t))}`);
-
-  for (let i = 1; i < N; ++i) {
-    t = ops.idiv(t, i);
-    console.log(`${t}`);
-  }
-
-  console.log(`${ops.integer('-12_345_678_901_234_567_890')}`);
-
-  console.log();
-}
