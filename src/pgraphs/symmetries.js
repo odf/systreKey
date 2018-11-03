@@ -1,10 +1,9 @@
 import * as pickler from '../common/pickler';
+import * as part from '../common/unionFind';
 
 import * as pg from './periodic';
 import { rationalLinearAlgebra,
          rationalLinearAlgebraModular } from '../arithmetic/types';
-import * as part from '../common/unionFind';
-import * as comb from '../common/combinatorics';
 
 
 const ops = rationalLinearAlgebra;
@@ -23,14 +22,62 @@ const _directedEdges = graph => {
 };
 
 
+const _permutations = n => {
+  const p = [];
+  for (let i = 1; i <= n; ++i)
+    p.push(i);
+
+  const result = [];
+
+  while (true) {
+    let i, j;
+
+    result.push(p.slice());
+
+    for (i = n-2; i >= 0 && p[i] > p[i+1]; --i)
+      ;
+    if (i < 0)
+      break;
+
+    for (j = n-1; p[j] < p[i]; --j)
+      ;
+
+    [p[i], p[j]] = [p[j], p[i]];
+
+    for (++i, j = n-1; i < j; ++i, --j)
+      [p[i], p[j]] = [p[j], p[i]];
+  }
+
+  return result;
+};
+
+
+const _combinations = (m, k) => {
+  if (k == 0) {
+    return [[]];
+  }
+  else {
+    const result = [];
+
+    for (let i = 1; i <= m - k + 1; ++i) {
+      for (const c of _combinations(m - i, k - 1)) {
+        result.push([i].concat(c.map(x => x + i)));
+      }
+    }
+
+    return result;
+  }
+};
+
+
 const _goodCombinations = (edges, pos) => {
   const dim = ops.dimension(edges[0].shift);
   const results = [];
 
-  for (const c of comb.combinations(edges.length, dim)) {
+  for (const c of _combinations(edges.length, dim)) {
     const vectors = c.map(i => pg.edgeVector(edges[i - 1], pos));
     if (ops.rank(vectors) == dim) {
-      for (const p of comb.permutations(dim))
+      for (const p of _permutations(dim))
         results.push(p.map(i => edges[c[i - 1] - 1]));
     }
   }
