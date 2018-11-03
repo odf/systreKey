@@ -144,30 +144,3 @@ export const systreKey = graph => {
 
 
 export const keyVersion = '1.0';
-
-
-if (require.main == module) {
-  Array.prototype.toString = function() {
-    return `[ ${this.map(x => x.toString()).join(', ')} ]`;
-  };
-
-  const test = g => {
-    const trav = invariant(g);
-
-    for (const e of trav)
-      console.log(e);
-    console.log();
-  };
-
-  test(pg.make([ [ 1, 2, [ 0, 0, 0 ] ],
-                 [ 1, 2, [ 1, 0, 0 ] ],
-                 [ 1, 2, [ 0, 1, 0 ] ],
-                 [ 1, 2, [ 0, 0, 1 ] ] ]));
-
-  test(pg.make([ [ 1, 2, [ 0, 0 ] ],
-                 [ 1, 2, [ 1, 0 ] ],
-                 [ 2, 3, [ 0, 0 ] ],
-                 [ 2, 3, [ 0, 1 ] ],
-                 [ 1, 3, [ 0, 0 ] ],
-                 [ 1, 3, [ 1, 1 ] ] ]));
-}

@@ -39,14 +39,3 @@ export function* combinations(m, k) {
     }
   }
 };
-
-
-if (require.main == module) {
-  for (const p of permutations(4))
-    console.log(p);
-
-  console.log();
-
-  for (const c of combinations(6, 3))
-    console.log(c);
-}

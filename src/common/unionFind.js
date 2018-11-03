@@ -109,16 +109,3 @@ export class LabelledPartition {
     }
   }
 };
-
-
-if (require.main == module) {
-  const p = new Partition();
-
-  for (const [a, b] of [[1,2],[3,4],[5,6],[7,8],[2,3],[1,6]])
-    p.union(a, b);
-
-  console.log(`${p}`);
-
-  for (let i = 0; i < 10; ++i)
-    console.log(`p.find(${i}) = ${p.find(i)}`);
-}
