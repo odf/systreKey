@@ -14,8 +14,7 @@
   },
   "author": "",
   "license": "Apache-2.0",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "babel-core": "^6.0.0",
     "babel-loader": "^7.0.0",
