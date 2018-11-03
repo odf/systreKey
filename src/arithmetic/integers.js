@@ -694,7 +694,6 @@ export const extend = (baseOps, baseLength = 0) => {
 
 if (require.main == module) {
   const ops = extend(require('./base').arithmetic());
-  const timer = require('../common/util').timer();
 
   const N = 59;
   let t = 1;
@@ -718,5 +717,4 @@ if (require.main == module) {
   console.log(`${ops.integer('-12_345_678_901_234_567_890')}`);
 
   console.log();
-  console.log(`Computation time: ${timer()} msec`);
 }

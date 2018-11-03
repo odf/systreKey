@@ -171,7 +171,6 @@ export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 if (require.main == module) {
   const a = require('./integers').extend(require('./base').arithmetic());
   const ops = extend(a, ['Integer', 'LongInt']);
-  const timer = require('../common/util').timer();
 
   const N = 128;
   let t = 0, q = 1;
@@ -195,5 +194,4 @@ if (require.main == module) {
   console.log(`${ops.rational('-111_111_111_111_111_111/-12_345_679')}`);
 
   console.log();
-  console.log(`Computation time: ${timer()} msec`);
 }
