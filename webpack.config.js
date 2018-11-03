@@ -14,13 +14,13 @@ fs.writeFileSync(path.join(basedir, 'src', 'version.js'),
                  'export const gitDate = "' + gitDate.trim() + '";\n');
 
 
-module.exports = [ "main" ].map(function(name) {
-  return {
+module.exports = [
+  {
     context: path.join(basedir, "src"),
-    entry: ["babel-polyfill", "./ui/" + name],
+    entry: ["babel-polyfill", "./scripts/systreKey"],
     output: {
       path: path.join(basedir, "public", "js"),
-      filename: name+".js"
+      filename: "systreKey.js"
     },
     module: {
       rules: [
@@ -32,5 +32,5 @@ module.exports = [ "main" ].map(function(name) {
     resolve: {
       extensions: [ ".js" ]
     }
-  };
-});
+  }
+];
