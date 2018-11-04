@@ -1,19 +1,21 @@
-const base = require('./base');
-const mats = require('./matrices');
-const linalg = require('./linearAlgebra');
+import * as base from './base';
+import * as mats from './matrices';
+import * as linalg from './linearAlgebra';
+import * as ints from './integers';
+import * as fracs from './fractions';
 
 
-export const integers = require('./integers')
-  .extend(base.arithmetic());
+export const integers =
+  ints.extend(base.arithmetic());
 
-export const rationals = require('./fractions')
-  .extend(integers, ['Integer', 'LongInt'], 'Fraction');
+export const rationals =
+  fracs.extend(integers, ['Integer', 'LongInt'], 'Fraction');
 
-export const rationalMatrices = mats
-  .extend(rationals, ['Integer', 'LongInt', 'Fraction']);
+export const rationalMatrices =
+  mats.extend(rationals, ['Integer', 'LongInt', 'Fraction']);
 
-export const rationalLinearAlgebra = linalg
-  .extend(rationalMatrices, true);
+export const rationalLinearAlgebra =
+  linalg.extend(rationalMatrices, true);
 
-export const rationalLinearAlgebraModular = linalg
-  .extend(rationalMatrices, false);
+export const rationalLinearAlgebraModular =
+  linalg.extend(rationalMatrices, false);
