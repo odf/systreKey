@@ -2,7 +2,7 @@ import * as pg from './periodic';
 import * as ps from './symmetries';
 
 import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from '../arithmetic/types';
+         rationalLinearAlgebraModular } from '../arithmetic/arithmetic';
 
 const ops = rationalLinearAlgebra;
 
@@ -138,7 +138,7 @@ const _seqToArray = s => {
 };
 
 
-export const invariant = graph => {
+const invariant = graph => {
   const adj = pg.adjacencies(graph);
   const pos = pg.barycentricPlacement(graph);
   const edgeListReps = ps.representativeEdgeLists(graph);
@@ -169,17 +169,25 @@ export const invariant = graph => {
 };
 
 
-export const systreKey = graph => {
-  const seq = [graph.dim];
+export const systreKey = edges => {
+  const graph = pg.make(edges);
 
-  for (const [from, to, shift] of invariant(graph)) {
-    seq.push(from);
-    seq.push(to);
-    for (const x of shift)
-      seq.push(x);
+  if (!pg.isConnected(graph))
+    throw new Error(`net is not connected`);
+  else if (!pg.isLocallyStable(graph))
+    throw new Error(`net is not locally stable`);
+  else {
+    const seq = [graph.dim];
+
+    for (const [from, to, shift] of invariant(ps.minimalImage(graph))) {
+      seq.push(from);
+      seq.push(to);
+      for (const x of shift)
+        seq.push(x);
+    }
+
+    return seq.join(' ');
   }
-
-  return seq.join(' ');
 };
 
 

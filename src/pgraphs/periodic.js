@@ -1,7 +1,7 @@
 import * as pickler from '../common/pickler';
 
 import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from '../arithmetic/types';
+         rationalLinearAlgebraModular } from '../arithmetic/arithmetic';
 
 import modularSolver from '../arithmetic/solveRational';
 

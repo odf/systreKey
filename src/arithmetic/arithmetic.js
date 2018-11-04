@@ -1,3 +1,9 @@
+import * as mats from './matrices';
+import * as linalg from './linearAlgebra';
+import * as ints from './integers';
+import * as fracs from './fractions';
+
+
 const typeOf = x => {
   const t = x == null ? 'Null' : (x.__typeName || x.constructor.name);
 
@@ -108,3 +114,19 @@ export const arithmetic = (registry = mergeDeep({}, defaults)) => {
 
   return result;
 };
+
+
+export const integers =
+  ints.extend(arithmetic());
+
+export const rationals =
+  fracs.extend(integers, ['Integer', 'LongInt'], 'Fraction');
+
+export const rationalMatrices =
+  mats.extend(rationals, ['Integer', 'LongInt', 'Fraction']);
+
+export const rationalLinearAlgebra =
+  linalg.extend(rationalMatrices, true);
+
+export const rationalLinearAlgebraModular =
+  linalg.extend(rationalMatrices, false);

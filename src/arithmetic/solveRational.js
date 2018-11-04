@@ -1,4 +1,4 @@
-import { rationalMatrices } from './types';
+import { rationalMatrices } from './arithmetic';
 
 const ops = rationalMatrices;
 
