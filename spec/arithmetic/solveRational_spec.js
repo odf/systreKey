@@ -2,8 +2,8 @@ import * as JS from 'jstest';
 import * as jsc from 'jsverify';
 import * as spec from '../helpers';
 
-import solve from '../../src/arithmetic/solveRational';
-import { rationalMatrices } from '../../src/arithmetic/types';
+import solve from '../../src/solveRational';
+import { rationalMatrices } from '../../src/arithmetic';
 
 const matrices = rationalMatrices;
 

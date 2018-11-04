@@ -1,6 +1,6 @@
 import * as jsc from 'jsverify';
 
-import * as seq from '../src/common/lazyseq';
+import * as seq from './lazyseq';
 
 
 const skip = (v, i) => v.slice(0, i).concat(v.slice(i + 1));

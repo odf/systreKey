@@ -2,7 +2,7 @@ import * as JS from 'jstest';
 import * as jsc from 'jsverify';
 import * as spec from '../helpers';
 
-import { integers } from '../../src/arithmetic/types';
+import { integers } from '../../src/arithmetic';
 
 const ops = integers;
 

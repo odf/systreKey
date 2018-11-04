@@ -2,7 +2,7 @@ import * as JS from 'jstest';
 import * as jsc from 'jsverify';
 import * as spec from '../helpers';
 
-import * as types from '../../src/arithmetic/types';
+import * as types from '../../src/arithmetic';
 
 
 const properties = {
