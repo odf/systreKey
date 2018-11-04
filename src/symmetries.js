@@ -191,8 +191,10 @@ const automorphism = (graph, start1, start2, transform, edgeByVec) => {
 
   while (queue.length) {
     const [w1, w2] = queue.shift();
+    const es = edgeByVec[w1];
 
-    for (const [d1, e1] of Object.entries(edgeByVec[w1])) {
+    for (const d1 in es) {
+      const e1 = es[d1];
       const e2 = edgeByVec[w2][encode(ops.times(decode(d1), transform))];
       if (e2 == null)
         return null;
