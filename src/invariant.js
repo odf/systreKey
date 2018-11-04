@@ -2,7 +2,7 @@ import * as pg from './periodic';
 import * as ps from './symmetries';
 
 import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from '../arithmetic/arithmetic';
+         rationalLinearAlgebraModular } from './arithmetic';
 
 const ops = rationalLinearAlgebra;
 

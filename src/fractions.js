@@ -1,4 +1,4 @@
-import * as pickler from '../common/pickler';
+import * as pickler from './pickler';
 
 export const extend = (intOps, intTypes, typeName = 'Fraction') => {
 

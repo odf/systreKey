@@ -1,8 +1,8 @@
-import * as pickler from '../common/pickler';
+import * as pickler from './pickler';
 
 import * as pg from './periodic';
 import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from '../arithmetic/arithmetic';
+         rationalLinearAlgebraModular } from './arithmetic';
 
 
 const ops = rationalLinearAlgebra;

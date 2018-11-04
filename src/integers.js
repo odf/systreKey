@@ -1,4 +1,4 @@
-import * as pickler from '../common/pickler';
+import * as pickler from './pickler';
 
 const findBaseLength = () => {
   for (let n = 2; ; n += 2) {

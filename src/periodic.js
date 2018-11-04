@@ -1,9 +1,9 @@
-import * as pickler from '../common/pickler';
+import * as pickler from './pickler';
 
 import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from '../arithmetic/arithmetic';
+         rationalLinearAlgebraModular } from './arithmetic';
 
-import modularSolver from '../arithmetic/solveRational';
+import modularSolver from './solveRational';
 
 
 export const ops = rationalLinearAlgebra;
