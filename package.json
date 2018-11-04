@@ -7,6 +7,7 @@
     "url": "https://github.com/odf/systreKey"
   },
   "main": "index.js",
+  "sideEffects": false,
   "scripts": {
     "build": "webpack --mode production",
     "build-dev": "webpack --mode development --debug --devtool cheap-module-source-map --output-pathinfo",
@@ -16,11 +17,9 @@
   "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
-    "babel-core": "^6.0.0",
-    "babel-loader": "^7.0.0",
-    "babel-plugin-transform-object-rest-spread": "^6.23.0",
-    "babel-polyfill": "^6.3.14",
-    "babel-preset-es2015": "^6.3.13",
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "babel-loader": "^8.0.4",
     "jstest": "^1.0.5",
     "jsverify": "^0.8.2",
     "node-libs-browser": "^2.0.0",
