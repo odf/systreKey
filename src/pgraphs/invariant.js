@@ -11,7 +11,7 @@ const _solveInRows = (v, M) =>
   ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
 
 
-const _traversal = function*(graph, v0, transform, adj) {
+const _traversal = function(graph, v0, transform, adj) {
   const zero = ops.vector(graph.dim);
 
   const pos = pg.barycentricPlacement(graph);
@@ -20,57 +20,67 @@ const _traversal = function*(graph, v0, transform, adj) {
   const queue = [[v0, zero]];
   const essentialShifts = [];
 
-  let next = 2;
+  let nextIndex = 2;
   let basisAdjustment = null;
+  let vn = 0;
+  let neighbors = [];
 
-  while (queue.length) {
-    const [vo, vShift] = queue.shift();
-    const vn = old2new[vo];
-
-    const neighbors = [];
-    for (const e of pg.allIncidences(graph, vo, adj)) {
-      const w = e.tail;
-      const s = ops.plus(vShift, ops.times(e.shift, transform));
-      neighbors.push([w, s, ops.plus(s, ops.times(pos[w], transform))]);
-    }
-
-    neighbors.sort(([wa, sa, pa], [wb, sb, pb]) => ops.cmp(pa, pb));
-
-    for (const [wo, s, p] of neighbors) {
-      const wn = old2new[wo];
-      if (wn == null) {
-        yield [vn, next, zero];
-        old2new[wo] = next++;
-        newPos[wo] = p;
-        queue.push([wo, s]);
-      }
-      else if (wn < vn)
-        continue;
-      else {
-        const rawShift = ops.minus(p, newPos[wo]);
-        let shift;
-        if (basisAdjustment != null)
-          shift = ops.times(rawShift, basisAdjustment);
-        else if (ops.sgn(rawShift) == 0)
-          shift = rawShift;
-        else {
-          if (essentialShifts.length)
-            shift = _solveInRows(rawShift, essentialShifts);
-
-          if (shift == null) {
-            shift = ops.unitVector(graph.dim, essentialShifts.length);
-            essentialShifts.push(rawShift);
-            if (essentialShifts.length == graph.dim)
-              basisAdjustment = ops.inverse(essentialShifts);
-          }
-          else
-            shift = shift[0].concat(ops.vector(graph.dim - shift[0].length));
+  const next = () => {
+    while (neighbors.length || queue.length) {
+      while (neighbors.length) {
+        const [wo, s, p] = neighbors.shift();
+        const wn = old2new[wo];
+        if (wn == null) {
+          old2new[wo] = nextIndex;
+          newPos[wo] = p;
+          queue.push([wo, s]);
+          return { value: [vn, nextIndex++, zero] };
         }
-        if (vn < wn || (vn == wn && ops.sgn(shift) < 0))
-          yield [vn, wn, shift];
+        else if (wn < vn)
+          continue;
+        else {
+          const rawShift = ops.minus(p, newPos[wo]);
+          let shift;
+          if (basisAdjustment != null)
+            shift = ops.times(rawShift, basisAdjustment);
+          else if (ops.sgn(rawShift) == 0)
+            shift = rawShift;
+          else {
+            if (essentialShifts.length)
+              shift = _solveInRows(rawShift, essentialShifts);
+
+            if (shift == null) {
+              shift = ops.unitVector(graph.dim, essentialShifts.length);
+              essentialShifts.push(rawShift);
+              if (essentialShifts.length == graph.dim)
+                basisAdjustment = ops.inverse(essentialShifts);
+            }
+            else
+              shift = shift[0].concat(ops.vector(graph.dim - shift[0].length));
+          }
+          if (vn < wn || (vn == wn && ops.sgn(shift) < 0))
+            return { value: [vn, wn, shift] };
+        }
+      }
+
+      if (queue.length) {
+        const [vo, vShift] = queue.shift();
+        vn = old2new[vo];
+
+        for (const e of pg.allIncidences(graph, vo, adj)) {
+          const w = e.tail;
+          const s = ops.plus(vShift, ops.times(e.shift, transform));
+          neighbors.push([w, s, ops.plus(s, ops.times(pos[w], transform))]);
+        }
+
+        neighbors.sort(([wa, sa, pa], [wb, sb, pb]) => ops.cmp(pa, pb));
       }
     }
-  }
+
+    return { done: true };
+  };
+
+  return { next };
 };
 
 
