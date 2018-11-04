@@ -2,7 +2,7 @@ var path = require('path');
 
 
 module.exports = {
-  entry: ['babel-polyfill', './src/index'],
+  entry: './src/index',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'systreKey.js',
