@@ -66,13 +66,18 @@ process.argv.slice(2).forEach(file => {
   const lines = fs.readFileSync(file, { encoding: 'utf8' }).split('\n');
 
   for (const block of entries(lines)) {
-    const key = sk.systreKey(block.edges);
-    if (key == block.key)
-      console.log(`${block.name}: OK`);
-    else {
-      console.log(`${block.name}: mismatch --`);
-      console.log(`    -- expected: ${block.key}`);
-      console.log(`    -- found:    ${key}`);
+    try {
+      const key = sk.systreKey(block.edges);
+      if (key == block.key)
+        console.log(`${block.name}: OK`);
+      else {
+        console.log(`${block.name}: mismatch --`);
+        console.log(`    -- expected: ${block.key}`);
+        console.log(`    -- found:    ${key}`);
+      }
+    }
+    catch (ex) {
+      console.log(`${block.name}: ${ex}`);
     }
   }
 });
