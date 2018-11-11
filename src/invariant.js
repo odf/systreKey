@@ -84,11 +84,70 @@ const _traversal = function(graph, v0, transform, adj) {
 };
 
 
+const _triangulate = matrix => {
+  const A = matrix.map(v => v.slice());
+  const [nrows, ncols] = ops.shape(A);
+
+  let sign = 1;
+  let row = 0;
+  let col = 0;
+
+  // --- try to annihilate one entry at a time
+  while (row < nrows && col < ncols) {
+    // --- find the entry of smallest norm in the current column
+    let pivot = null;
+    let pivotRow = -1;
+
+    for (let i = row; i < nrows; ++i) {
+      const val = ops.abs(A[i][col]);
+      if (ops.ne(0, val) && (pivot == null || ops.lt(val, pivot))) {
+        pivot = val;
+        pivotRow = i;
+      }
+    }
+
+    // --- if the current column is "clean", move on to the next one
+    if (pivot == null) {
+      col += 1;
+      continue;
+    }
+
+    // --- move the pivot to the current row
+    if (pivotRow != row) {
+      [A[row], A[pivotRow]] = [A[pivotRow], A[row]];
+      sign = -sign;
+    }
+
+    // --- make the pivot positive
+    if (ops.sgn(A[row]) < 0) {
+      A[row] = ops.negative(A[row]);
+      sign = -sign;
+    }
+
+    // --- attempt to clear the current column below the diagonal
+    for (let i = row + 1; i < nrows; ++i) {
+      if (ops.ne(0, A[i][col])) {
+        const f = ops.idiv(A[i][col], A[row][col]);
+        A[i] = ops.minus(A[i], ops.times(f, A[row]));
+      }
+    }
+
+    // --- if clearing was successful, move on
+    if (A.slice(row + 1).every(v => ops.eq(0, v[col]))) {
+      row += 1;
+      col += 1;
+    }
+  }
+
+  // --- we're done
+  return { matrix: A, sign };
+};
+
+
 const _postprocessTraversal = trav => {
-  let basis = null;
-  for (const [head, tail, shift] of trav)
-    basis = rationalLinearAlgebraModular.extendBasis(shift, basis);
-  basis = basis.map(v => ops.sgn(v) < 0 ? ops.negative(v) : v);
+  const shifts = trav.map(([head, tail, shift]) => shift);
+  const dim = ops.dimension(shifts[0]);
+  const basis = _triangulate(shifts).matrix.slice(0, dim);
 
   const basisChange = ops.inverse(basis);
 
