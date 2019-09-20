@@ -80,7 +80,7 @@ const _traversal = function(graph, v0, transform, adj) {
     return { done: true };
   };
 
-  return { next };
+  return { next, mapping: () => old2new };
 };
 
 
@@ -209,12 +209,13 @@ const invariant = graph => {
 
   for (const edgeList of edgeListReps) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
-    const trav = _lazySeq(_traversal(graph, edgeList[0].head, transform, adj));
+    const trav = _traversal(graph, edgeList[0].head, transform, adj);
+    trav.seq = _lazySeq(trav);
 
     if (best == null)
       best = trav;
     else {
-      let [t, b] = [trav, best];
+      let [t, b] = [trav.seq, best.seq];
 
       while (t != null && _cmpSteps(t.first(), b.first()) == 0)
         [t, b] = [t.rest(), b.rest()];
@@ -224,11 +225,14 @@ const invariant = graph => {
     }
   }
 
-  return _postprocessTraversal(_seqToArray(best)).sort(_cmpSteps);
+  return {
+    graph: _postprocessTraversal(_seqToArray(best.seq)).sort(_cmpSteps),
+    mapping: best.mapping()
+  };
 };
 
 
-export const systreKey = edges => {
+export const systreKeyWithMapping = edges => {
   const graph = pg.make(edges);
 
   if (!pg.isConnected(graph))
@@ -236,18 +240,33 @@ export const systreKey = edges => {
   else if (!pg.isLocallyStable(graph))
     throw new Error(`net is not locally stable`);
   else {
+    const min = ps.minimalImage(graph);
+    const inv = invariant(min.graph);
     const seq = [graph.dim];
 
-    for (const [from, to, shift] of invariant(ps.minimalImage(graph))) {
+    for (const [from, to, shift] of inv.graph) {
       seq.push(from);
       seq.push(to);
       for (const x of shift)
         seq.push(x);
     }
 
-    return seq.join(' ');
+    const key = seq.join(' ');
+
+    if (min.mapping) {
+      const mapping = {};
+      for (const k in min.mapping)
+        mapping[k] = inv.mapping[min.mapping[k]];
+
+      return { key, mapping };
+    }
+    else
+      return { key, mapping: inv.mapping };
   }
 };
+
+
+export const systreKey = edges => systreKeyWithMapping(edges).key;
 
 
 export const keyVersion = '1.0';

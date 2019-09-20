@@ -291,7 +291,7 @@ export const minimalImage = graph => {
   const vectors = extraTranslationVectors(graph, equivs);
 
   if (vectors.length == 0)
-    return graph;
+    return { graph };
 
   const basisChange = ops.inverse(fullTranslationBasis(vectors));
 
@@ -313,7 +313,10 @@ export const minimalImage = graph => {
     imgEdges.push([vNew + 1, wNew + 1, sNew]);
   }
 
-  return pg.make(imgEdges);
+  return {
+    graph: pg.make(imgEdges),
+    mapping: old2new
+  };
 };
 
 
