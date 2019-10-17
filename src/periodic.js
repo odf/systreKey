@@ -181,6 +181,8 @@ const _makeCoordinateTransform = (B, dim) => {
 const _componentInCoverGraph = (graph, start) => {
   const { nodes, nodeShifts, bridges } = _componentInOrbitGraph(graph, start);
   const basis = _makeBasis(bridges.map(b => b.s));
+  if (basis == null)
+    throw new Error('not a periodic graph');
   const dim = basis.length;
   const transform = _makeCoordinateTransform(basis, graph.dim);
 
