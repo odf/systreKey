@@ -298,19 +298,19 @@ export const minimalImage = graph => {
   const old2new = {};
   for (let i = 0; i < classes.length; ++i) {
     for (const v of classes[i])
-      old2new[v] = i;
+      old2new[v] = i + 1;
   }
 
   const imgEdges = [];
   for (const { head: v, tail: w, shift: s } of graph.edges) {
     const vNew = old2new[v];
     const wNew = old2new[w];
-    const vShift = ops.minus(pos[v], pos[classes[vNew][0]]);
-    const wShift = ops.minus(pos[w], pos[classes[wNew][0]]);
+    const vShift = ops.minus(pos[v], pos[classes[vNew - 1][0]]);
+    const wShift = ops.minus(pos[w], pos[classes[wNew - 1][0]]);
     const sNew = ops.times(ops.plus(s, ops.minus(wShift, vShift)),
                            basisChange);
 
-    imgEdges.push([vNew + 1, wNew + 1, sNew]);
+    imgEdges.push([vNew, wNew, sNew]);
   }
 
   return {
