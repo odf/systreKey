@@ -302,7 +302,9 @@ export const minimalImage = graph => {
   }
 
   const imgEdges = [];
-  for (const { head: v, tail: w, shift: s } of graph.edges) {
+  const edgeMapping = {};
+  for (const e of graph.edges) {
+    const { head: v, tail: w, shift: s } = e;
     const vNew = old2new[v];
     const wNew = old2new[w];
     const vShift = ops.minus(pos[v], pos[classes[vNew - 1][0]]);
@@ -311,11 +313,16 @@ export const minimalImage = graph => {
                            basisChange);
 
     imgEdges.push([vNew, wNew, sNew]);
+
+    const eNew = pg.makeEdge(vNew, wNew, sNew);
+    edgeMapping[encode(e)] = eNew;
+    edgeMapping[encode(e.reverse())] = eNew.reverse();
   }
 
   return {
     graph: pg.make(imgEdges),
-    mapping: old2new
+    mapping: old2new,
+    edgeMapping
   };
 };
 

@@ -113,7 +113,9 @@ const adjustedTraversal = function* (traversal) {
       const shift = basis.add(ops.plus(edge.shift, d));
 
       if (v < w || ops.sgn(shift) < 0) {
-        edgeMapping[encode(edge)] = pg.makeEdge(v, w, shift);
+        const eImg = pg.makeEdge(v, w, shift);
+        edgeMapping[encode(edge)] = eImg;
+        edgeMapping[encode(edge.reverse())] = eImg.reverse();
         yield [v, w, shift];
       }
     }
@@ -259,15 +261,18 @@ export const systreKeyWithMapping = edges => {
 
     const key = seq.join(' ');
 
-    if (min.mapping) {
-      const mapping = {};
-      for (const k in min.mapping)
-        mapping[k] = inv.vertexMapping[min.mapping[k]];
+    const vmap = v => min.mapping ? min.mapping[v] : v;
+    const emap = e => min.edgeMapping ? min.edgeMapping[encode(e)] : e;
 
-      return { key, mapping };
-    }
-    else
-      return { key, mapping: inv.vertexMapping };
+    const mapping = {};
+    for (const v of pg.vertices(graph))
+      mapping[v] = inv.vertexMapping[vmap(v)];
+
+    const edgeMapping = [];
+    for (const e of graph.edges)
+      edgeMapping.push([e, inv.edgeMapping[encode(emap(e))]]);
+
+    return { key, mapping, edgeMapping };
   }
 };
 
