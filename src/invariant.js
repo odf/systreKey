@@ -1,234 +1,240 @@
+import { serialize as encode } from './pickler';
+import { rationalLinearAlgebra as ops } from './arithmetic';
 import * as pg from './periodic';
 import * as ps from './symmetries';
 
-import { rationalLinearAlgebra,
-         rationalLinearAlgebraModular } from './arithmetic';
 
-const ops = rationalLinearAlgebra;
+const buffered = iterator => {
+  const generated = [];
+  let returned = null;
 
+  const advance = () => {
+    const { value, done } = iterator.next();
 
-const _solveInRows = (v, M) =>
-  ops.transposed(ops.solve(ops.transposed(M), ops.transposed(v)));
+    if (!done)
+      generated.push(value);
+    else if (value != null)
+      returned = value;
 
+    return !done;
+  }
 
-const _traversal = function(graph, v0, transform, adj) {
-  const zero = ops.vector(graph.dim);
-
-  const pos = pg.barycentricPlacement(graph);
-  const old2new = {[v0]: 1};
-  const newPos = { [v0]: ops.times(pos[v0], transform) };
-  const queue = [[v0, zero]];
-  const essentialShifts = [];
-
-  let nextIndex = 2;
-  let basisAdjustment = null;
-  let vn = 0;
-  let neighbors = [];
-
-  const next = () => {
-    while (neighbors.length || queue.length) {
-      while (neighbors.length) {
-        const [wo, s, p] = neighbors.shift();
-        const wn = old2new[wo];
-        if (wn == null) {
-          old2new[wo] = nextIndex;
-          newPos[wo] = p;
-          queue.push([wo, s]);
-          return { value: [vn, nextIndex++, zero] };
-        }
-        else if (wn < vn)
-          continue;
-        else {
-          const rawShift = ops.minus(p, newPos[wo]);
-          let shift;
-          if (basisAdjustment != null)
-            shift = ops.times(rawShift, basisAdjustment);
-          else if (ops.sgn(rawShift) == 0)
-            shift = rawShift;
-          else {
-            if (essentialShifts.length)
-              shift = _solveInRows(rawShift, essentialShifts);
-
-            if (shift == null) {
-              shift = ops.unitVector(graph.dim, essentialShifts.length);
-              essentialShifts.push(rawShift);
-              if (essentialShifts.length == graph.dim)
-                basisAdjustment = ops.inverse(essentialShifts);
-            }
-            else
-              shift = shift[0].concat(ops.vector(graph.dim - shift[0].length));
-          }
-          if (vn < wn || (vn == wn && ops.sgn(shift) < 0))
-            return { value: [vn, wn, shift] };
-        }
-      }
-
-      if (queue.length) {
-        const [vo, vShift] = queue.shift();
-        vn = old2new[vo];
-
-        for (const e of pg.allIncidences(graph, vo, adj)) {
-          const w = e.tail;
-          const s = ops.plus(vShift, ops.times(e.shift, transform));
-          neighbors.push([w, s, ops.plus(s, ops.times(pos[w], transform))]);
-        }
-
-        neighbors.sort(([wa, sa, pa], [wb, sb, pb]) => ops.cmp(pa, pb));
-      }
+  return {
+    get(i) {
+      while (generated.length <= i && advance()) { }
+      return generated[i];
+    },
+    result() {
+      while (advance()) { }
+      return { generated, returned };
     }
-
-    return { done: true };
   };
-
-  return { next, mapping: () => old2new };
 };
 
 
-const _triangulate = matrix => {
+class Basis {
+  constructor() {
+    this.dim = null;
+    this.vectors = [];
+    this.matrix = null;
+  }
+
+  add(vecIn) {
+    const n = this.vectors.length;
+
+    if (this.dim == null) {
+      this.dim = vecIn.length;
+      this.matrix = ops.identityMatrix(this.dim);
+    }
+
+    if (this.dim > n && ops.rank(this.vectors.concat([vecIn])) > n) {
+      this.vectors.push(vecIn);
+
+      const basis = this.vectors.slice();
+      for (const vec of ops.identityMatrix(this.dim)) {
+        if (ops.rank(basis.concat([vec])) > basis.length)
+          basis.push(vec);
+      }
+      this.matrix = ops.inverse(basis);
+    }
+    return ops.times(vecIn, this.matrix);
+  }
+};
+
+
+const placeOrderedTraversal = function* (graph, start, transform) {
+  const adj = pg.adjacencies(graph);
+  const pos = pg.barycentricPlacement(graph);
+  const seen = {};
+  const queue = [start];
+
+  while (queue.length) {
+    const v = queue.shift();
+
+    if (!seen[v]) {
+      seen[v] = true;
+
+      const incidences = adj[v]
+        .map(({ v: w, s }) => pg.makeEdge(v, w, s))
+        .map(e => [e, ops.times(pg.edgeVector(e, pos), transform)]);
+      incidences.sort(([, da], [, db]) => ops.cmp(da, db));
+
+      for (const [e] of incidences) {
+        queue.push(e.tail);
+        yield e;
+      }
+    }
+  }
+};
+
+
+const adjustedTraversal = function* (traversal) {
+  const shifts = {};
+  const vertexMapping = {};
+  const edgeMapping = {};
+  const basis = new Basis();
+  let nrVerticesMapped = 0;
+
+  for (const edge of traversal) {
+    if (vertexMapping[edge.head] == null) {
+      vertexMapping[edge.head] = ++nrVerticesMapped;
+      shifts[edge.head] = ops.times(0, edge.shift);
+    }
+    const v = vertexMapping[edge.head];
+
+    if (vertexMapping[edge.tail] == null) {
+      vertexMapping[edge.tail] = ++nrVerticesMapped;
+      shifts[edge.tail] = ops.plus(edge.shift, shifts[edge.head]);
+    }
+    const w = vertexMapping[edge.tail];
+
+    if (v <= w) {
+      const d = ops.minus(shifts[edge.head], shifts[edge.tail]);
+      const shift = basis.add(ops.plus(edge.shift, d));
+
+      if (v < w || ops.sgn(shift) < 0) {
+        edgeMapping[encode(edge)] = pg.makeEdge(v, w, shift);
+        yield [v, w, shift];
+      }
+    }
+  }
+
+  return { vertexMapping, edgeMapping, basisChange: basis.matrix };
+};
+
+
+const findPivot = (A, col, startRow) => {
+  const pairs = A
+    .map((row, i) => [ops.abs(row[col]), i])
+    .filter(([x, i]) => i >= startRow && ops.sgn(x));
+
+  if (pairs.length)
+    return pairs.reduce((acc, val) => ops.lt(val[0], acc[0]) ? val : acc)[1];
+};
+
+
+const triangulate = matrix => {
   const A = matrix.map(v => v.slice());
   const [nrows, ncols] = ops.shape(A);
 
-  let sign = 1;
   let row = 0;
-  let col = 0;
 
-  // --- try to annihilate one entry at a time
-  while (row < nrows && col < ncols) {
-    // --- find the entry of smallest norm in the current column
-    let pivot = null;
-    let pivotRow = -1;
+  for (let col = 0; col < ncols; ++col) {
+    while (true) {
+      const pivotRow = findPivot(A, col, row);
+      if (pivotRow == null)
+        break;
 
-    for (let i = row; i < nrows; ++i) {
-      const val = ops.abs(A[i][col]);
-      if (ops.ne(0, val) && (pivot == null || ops.lt(val, pivot))) {
-        pivot = val;
-        pivotRow = i;
+      if (pivotRow != row)
+        [A[row], A[pivotRow]] = [A[pivotRow], A[row]];
+
+      if (ops.sgn(A[row]) < 0)
+        A[row] = ops.negative(A[row]);
+
+      for (let i = row + 1; i < nrows; ++i) {
+        if (ops.ne(0, A[i][col])) {
+          const f = ops.idiv(A[i][col], A[row][col]);
+          A[i] = ops.minus(A[i], ops.times(f, A[row]));
+        }
       }
-    }
 
-    // --- if the current column is "clean", move on to the next one
-    if (pivot == null) {
-      col += 1;
-      continue;
-    }
-
-    // --- move the pivot to the current row
-    if (pivotRow != row) {
-      [A[row], A[pivotRow]] = [A[pivotRow], A[row]];
-      sign = -sign;
-    }
-
-    // --- make the pivot positive
-    if (ops.sgn(A[row]) < 0) {
-      A[row] = ops.negative(A[row]);
-      sign = -sign;
-    }
-
-    // --- attempt to clear the current column below the diagonal
-    for (let i = row + 1; i < nrows; ++i) {
-      if (ops.ne(0, A[i][col])) {
-        const f = ops.idiv(A[i][col], A[row][col]);
-        A[i] = ops.minus(A[i], ops.times(f, A[row]));
+      if (A.every((v, i) => i <= row || ops.eq(0, v[col]))) {
+        row += 1;
+        break;
       }
-    }
-
-    // --- if clearing was successful, move on
-    if (A.slice(row + 1).every(v => ops.eq(0, v[col]))) {
-      row += 1;
-      col += 1;
     }
   }
 
-  // --- we're done
-  return { matrix: A, sign };
+  return A.slice(0, ncols);
 };
 
 
-const _postprocessTraversal = trav => {
-  const shifts = trav.map(([head, tail, shift]) => shift);
-  const dim = ops.dimension(shifts[0]);
-  const basis = _triangulate(shifts).matrix.slice(0, dim);
+const transformEdges = (edges, M) => edges.map(([head, tail, shift]) => {
+  const newShift = ops.times(shift, M);
 
-  const basisChange = ops.inverse(basis);
+  if (newShift.some(x => !ops.isInteger(x)))
+    throw new Error("panic: produced non-integer shift");
 
-  return trav.map(([head, tail, shift]) => {
-    const newShift = ops.times(shift, basisChange);
-
-    if (newShift.some(x => !ops.isInteger(x)))
-      throw new Error("panic: produced non-integer shift");
-
-    if (head == tail && ops.sgn(newShift) > 0)
-      return [head, tail, ops.negative(newShift)];
-    else
-      return [head, tail, newShift];
-  });
-};
+  if (head == tail && ops.sgn(newShift) > 0)
+    return [head, tail, ops.negative(newShift)];
+  else
+    return [head, tail, newShift];
+});
 
 
-const _lazySeq = generator => {
-  const s = generator.next();
+const transformEdgeMapping = (mapping, M) => {
+  const result = {};
 
-  if (s.done)
-    return null;
-  else {
-    const obj = {
-      first: () => s.value,
-      rest: () => {
-        const val = (() => _lazySeq(generator))();
-        obj.rest = () => val;
-        return val;
-      }
-    };
-
-    return obj;
-  }
-};
-
-
-const _seqToArray = s => {
-  const a = [];
-
-  while (s != null) {
-    a.push(s.first());
-    s = s.rest();
+  for (const [key, edge] of Object.entries(mapping)) {
+    const shift = ops.times(edge.shift, M);
+    result[key] = pg.makeEdge(edge.head, edge.tail, shift);
   }
 
-  return a;
+  return result;
 };
 
 
-const invariant = graph => {
-  const adj = pg.adjacencies(graph);
+const invariantWithMapping = graph => {
   const pos = pg.barycentricPlacement(graph);
-  const edgeListReps = ps.representativeEdgeLists(graph);
+  const bases = ps.representativeEdgeLists(graph);
 
   const _cmpSteps = ([headA, tailA, shiftA], [headB, tailB, shiftB]) =>
     (headA - headB) || (tailA - tailB) || ops.cmp(shiftA, shiftB);
 
   let best = null;
 
-  for (const edgeList of edgeListReps) {
+  for (const edgeList of bases) {
     const transform = ops.inverse(edgeList.map(e => pg.edgeVector(e, pos)));
-    const trav = _traversal(graph, edgeList[0].head, transform, adj);
-    trav.seq = _lazySeq(trav);
+    const base = placeOrderedTraversal(graph, edgeList[0].head, transform);
+    const trav = buffered(adjustedTraversal(base));
 
     if (best == null)
       best = trav;
     else {
-      let [t, b] = [trav.seq, best.seq];
+      for (let i = 0; ; ++i) {
+        const next = trav.get(i);
+        if (next == null)
+          break;
 
-      while (t != null && _cmpSteps(t.first(), b.first()) == 0)
-        [t, b] = [t.rest(), b.rest()];
-
-      if (t != null && _cmpSteps(t.first(), b.first()) < 0)
-        best = trav;
+        const d = _cmpSteps(next, best.get(i));
+        if (d < 0)
+          best = trav;
+        else if (d > 0)
+          break;
+      }
     }
   }
 
-  return {
-    graph: _postprocessTraversal(_seqToArray(best.seq)).sort(_cmpSteps),
-    mapping: best.mapping()
-  };
+  const { generated, returned } = best.result();
+  const shifts = generated.map(([head, tail, shift]) => shift);
+  const M = ops.inverse(triangulate(shifts));
+
+  const edges = transformEdges(generated, M).sort(_cmpSteps);
+  const basisChange = ops.times(returned.basisChange, M);
+  const vertexMapping = returned.vertexMapping;
+  const edgeMapping = transformEdgeMapping(returned.edgeMapping, M);
+
+  return { edges, vertexMapping, edgeMapping, basisChange };
 };
 
 
@@ -241,10 +247,10 @@ export const systreKeyWithMapping = edges => {
     throw new Error(`net is not locally stable`);
   else {
     const min = ps.minimalImage(graph);
-    const inv = invariant(min.graph);
+    const inv = invariantWithMapping(min.graph);
     const seq = [graph.dim];
 
-    for (const [from, to, shift] of inv.graph) {
+    for (const [from, to, shift] of inv.edges) {
       seq.push(from);
       seq.push(to);
       for (const x of shift)
@@ -256,12 +262,12 @@ export const systreKeyWithMapping = edges => {
     if (min.mapping) {
       const mapping = {};
       for (const k in min.mapping)
-        mapping[k] = inv.mapping[min.mapping[k]];
+        mapping[k] = inv.vertexMapping[min.mapping[k]];
 
       return { key, mapping };
     }
     else
-      return { key, mapping: inv.mapping };
+      return { key, mapping: inv.vertexMapping };
   }
 };
 
