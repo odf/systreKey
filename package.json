@@ -17,14 +17,14 @@
   "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
-    "@babel/core": "^7.6.4",
-    "@babel/preset-env": "^7.6.3",
-    "babel-loader": "^8.0.6",
+    "@babel/core": "^7.14.0",
+    "@babel/preset-env": "^7.14.1",
+    "babel-loader": "^8.2.2",
     "jstest": "^1.0.5",
     "jsverify": "^0.8.2",
     "node-libs-browser": "^2.2.1",
-    "source-map-support": "^0.5.13",
-    "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.9"
+    "source-map-support": "^0.5.19",
+    "webpack": "^4.46.0",
+    "webpack-cli": "^3.3.12"
   }
 }
