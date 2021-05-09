@@ -240,6 +240,10 @@ const invariantWithMapping = graph => {
 };
 
 
+const edgeToStr = ({ head, tail, shift }) =>
+  `${head} ${tail}  ${shift.join(' ')}`;
+
+
 export const systreKeyWithMapping = edges => {
   const graph = pg.make(edges);
 
@@ -268,9 +272,9 @@ export const systreKeyWithMapping = edges => {
     for (const v of pg.vertices(graph))
       mapping[v] = inv.vertexMapping[vmap(v)];
 
-    const edgeMapping = [];
+    const edgeMapping = {};
     for (const e of graph.edges)
-      edgeMapping.push([e, inv.edgeMapping[encode(emap(e))]]);
+      edgeMapping[edgeToStr(e)] = edgeToStr(inv.edgeMapping[encode(emap(e))]);
 
     return { key, mapping, edgeMapping };
   }

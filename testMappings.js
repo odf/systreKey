@@ -73,10 +73,10 @@ process.argv.slice(2).forEach(file => {
         const result = sk.systreKeyWithMapping(block.edges);
 
         for (const v in result.mapping)
-          console.log(`    ${v}  ==>  ${result.mapping[v]}`);
+          console.log(`    ${v}\t=>  ${result.mapping[v]}`);
 
-        for (const [a, b] of result.edgeMapping)
-          console.log(`    ${a}  ==>  ${b}`);
+        for (const e in result.edgeMapping)
+          console.log(`    ${e}  \t=>  ${result.edgeMapping[e]}`);
 
         console.log();
       }
